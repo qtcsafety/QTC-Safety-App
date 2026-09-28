@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<base target="_top">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Safety APP</title>
+</head>
+<body style="margin:0; font-family:sans-serif; text-align:center; padding-top:40px; background-color:#FFF9EE;">
+<div id="app-frame-wrap" style="width:100%;height:100vh;">
+  <!-- UI แสดงระหว่างรอเด้งไปหน้าแอป -->
+  <h3 style="color:#FF7043;">กำลังพาไปยังแอพ...</h3>
+  <p style="color:#666; font-size:14px;">กรุณารอสักครู่</p>
+
+  <p id="fallback-container" style="display:none; margin-top:30px;">
+     <a id="fallback-link" href="#" style="padding:12px 24px; background:#42A5F5; color:#fff; text-decoration:none; border-radius:10px; font-weight:bold;">กดที่นี่เพื่อเปิดแอพ</a>
+  </p>
+</div>
+
+<script>
+  // ⚠️ ลิงก์ Apps Script ของ "แอพพนักงาน" (Deploy แอพเวอร์ชันพนักงานแล้วนำ URL /exec มาใส่ตรงนี้)
+  var EXEC_URL = 'วาง_URL_EXEC_ของแอพพนักงานที่นี่';
+
+  // ⚠️ ลิงก์ Apps Script ของ "แอพ Admin เดิม" - ใช้เปิดลิงก์ปลายทางของ QR Code (ทำให้ใช้ QR ชุดเดียวกับ Admin ได้)
+  var REDIRECT_EXEC_URL = 'https://script.google.com/macros/s/AKfycbyaenDOlt49mpfX0ICRPhATQwE2Jcd7NDz_NxZqllPsFmcG0D4BJG630wv5gNEEGrPt2A/exec';
+
+  var params = new URLSearchParams(window.location.search);
+  var id = params.get('id');
+  var wrap = document.getElementById('app-frame-wrap');
+
+  if (params.get('redirect') === '1' && id) {
+    // ⚠️ สร้างฟังก์ชันรับลิงก์เป้าหมาย (JSONP) ทะลุระบบป้องกันของมือถือ
+    var callbackName = 'jsonpCallback_' + Math.round(100000 * Math.random());
+
+    window[callbackName] = function(data) {
+      if (data && data.link) {
+        window.location.replace(data.link); // เด้งทะลุไปลิงก์เป้าหมายเลย
+      } else {
+        wrap.innerHTML = '<h2 style="padding-top:40px; color:#EF5350;">❌ ไม่พบแอพนี้ หรือถูกลบไปแล้ว</h2>';
+      }
+      delete window[callbackName];
+    };
+
+    // ใช้ <script> แปะแทน Fetch
+    var script = document.createElement('script');
+    script.src = REDIRECT_EXEC_URL + '?id=' + encodeURIComponent(id) + '&redirect=1&callback=' + callbackName;
+    document.body.appendChild(script);
+
+    // หากเน็ตช้ามากๆ หรือมีปัญหาจริงๆ ภายใน 4 วินาที จะแสดงปุ่มสำรองให้กดเอง
+    setTimeout(function() {
+      if(window[callbackName]) {
+         document.getElementById('fallback-container').style.display = 'block';
+         document.getElementById('fallback-link').href = REDIRECT_EXEC_URL + '?id=' + encodeURIComponent(id) + '&redirect=1';
+      }
+    }, 4000);
+
+  } else {
+    // โหลดหน้า Dashboard (แอพพนักงาน) หากไม่ได้สแกน QR เข้ามา
+    wrap.innerHTML = '';
+    var iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.height = '100vh';
+    iframe.style.border = '0';
+    iframe.setAttribute('scrolling', 'yes');
+    iframe.src = EXEC_URL;
+    wrap.appendChild(iframe);
+  }
+</script>
+</body>
+</html>
